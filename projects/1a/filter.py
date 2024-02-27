@@ -57,8 +57,8 @@ else:
     outfields = list(fields) # like deepcopy, but on the first level only!
     outfields.remove(field)
 
-outfields = fields[:1] + fields[2:]
-
+outfields = fields[:1] + fields[2:] 
+# print(outfields, len(outfields))
 
 for line in sys.stdin:
     # skip header
@@ -67,9 +67,13 @@ for line in sys.stdin:
 
     #unpack into a tuple/dict
     values = line.rstrip().split('\t')
-    hotel_record = dict(zip(fields[:1] + fields[2:], values)) #Hotel(values)
+    while len(values) != len(outfields):
+        values += ['']
+    # print(values, len(values))
+    hotel_record = dict(zip(outfields, values)) #Hotel(values)
 
     #apply filter conditions
+    # if True:
     if filter_cond(hotel_record):
         output = "\t".join([hotel_record[x] for x in outfields])
         print(output)
