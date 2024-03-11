@@ -4,7 +4,7 @@ ADD FILE projects/2a/model.py;
 ADD FILE projects/2a/predict.py;
 
 drop table temp_hw2_test;
-CREATE TEMPORARY EXTERNAL TABLE temp_hw2_test AS
+CREATE TEMPORARY TABLE temp_hw2_test AS
 SELECT
   CASE WHEN hw2_test.id IS NULL THEN 0 ELSE hw2_test.id END AS id,
   CASE WHEN hw2_test.if1 IS NULL THEN 0 ELSE hw2_test.if1 END AS if1,
