@@ -24,7 +24,7 @@ model = load("2a.joblib")
 
 # read and infere
 read_opts=dict(
-        sep='\t', names=fields[:1] + fields[2:], index_col=False, header=None,
+        sep='\t', names=fields[:1] + fields[2:15], index_col=False, header=None,
         iterator=True, chunksize=100
 )
 
