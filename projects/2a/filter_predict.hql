@@ -1,6 +1,6 @@
 SET mapreduce.reduce.memory.mb=4096;
 
-ADD FILE projects/2a/2a.joblib;
+ADD FILE 2a.joblib;
 ADD FILE projects/2a/model.py;
 ADD FILE projects/2a/predict.py;
 
