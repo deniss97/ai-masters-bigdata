@@ -37,16 +37,16 @@ counter = 0
 
 while True:
     counter += 1    
-#     print(f"Running BFS iteration #{counter}")
+    print(f"Running BFS iteration #{counter}")
     candidates = distances.join(forward_edges, 200).map(step)
     # Log the candidates after they are generated    
-#     print(f"Candidates after iteration #{counter}: {candidates.take(10)}")
+    print(f"Candidates after iteration #{counter}: {candidates.take(10)}")
     new_distances = distances.fullOuterJoin(candidates, 200).map(complete, True).persist()    
     # Log new_distances in each iteration
-#     print(f"new_distances contents in iteration #{counter}: {new_distances.take(10)}")
+    print(f"new_distances contents in iteration #{counter}: {new_distances.take(10)}")
     # Add these lines before count:
-#     print(f"Number of distances after iteration #{counter}: {distances.count()}")
-#     print(f"Number of new_distances after iteration #{counter}: {new_distances.count()}")
+    print(f"Number of distances after iteration #{counter}: {distances.count()}")
+    print(f"Number of new_distances after iteration #{counter}: {new_distances.count()}")
     # Check if end_node is in any path    
     count = new_distances.filter(lambda i: end_node in i[1] if i[1] is not None else False).count()
     if count > 0 or counter > 100:
