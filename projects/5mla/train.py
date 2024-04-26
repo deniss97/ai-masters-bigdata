@@ -9,10 +9,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import log_loss
 from joblib import dump
 
+from model import model, fields
 
 logging.basicConfig(level=logging.DEBUG)
 
-# Чтение аргументов скрипта
 try:
     c_param = float(sys.argv[1])
     train_path = sys.argv[2]
