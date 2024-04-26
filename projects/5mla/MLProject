@@ -1,0 +1,11 @@
+name: my_ml_project
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      model_param1: {type: float, default: 1}
+      train_path: {type: path}
+    command: "/opt/conda/envs/dsenv/bin/python train.py {model_param1} {train_path}"
+
