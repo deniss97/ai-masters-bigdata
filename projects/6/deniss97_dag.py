@@ -36,11 +36,16 @@ feature_eng_train_task = SparkSubmitOperator(
     num_executors=2,
     conf={
         'spark.driver.extraJavaOptions': '-Djava.security.egd=file:/dev/../dev/urandom',
-        'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
+        'spark.yarn.appMasterEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
+        'spark.yarn.executorEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
     },
     env_vars={
         'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
     },
+    application_args=[],
+    packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
+    driver_memory='1g',
+    spark_binary='/usr/bin/spark3-submit',
     dag=dag
 )
 
@@ -60,7 +65,7 @@ model_sensor = FileSensor(
     task_id='model_sensor',
     filepath=f"{base_dir}/6.joblib",
     poke_interval=300,
-    timeout=3600,
+    timeout=1800,
     dag=dag
 )
 
@@ -86,4 +91,3 @@ predict_task = SparkSubmitOperator(
 end = EmptyOperator(task_id='end', dag=dag)
 
 start >> feature_eng_train_task >> download_train_task >> train_task >> model_sensor >> feature_eng_test_task >> predict_task >> end
-
