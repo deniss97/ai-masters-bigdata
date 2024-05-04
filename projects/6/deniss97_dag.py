@@ -1,7 +1,8 @@
 from airflow import DAG
-from airflow.operators.dummy import DummyOperator
+from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.sensors.filesystem import FileSensor
 from datetime import datetime
 
 default_args = {
@@ -16,23 +17,29 @@ dag = DAG(
     'deniss97_dag',
     default_args=default_args,
     description='DAG for sentiment prediction using Spark and sklearn',
-    schedule_interval=None,
+    schedule=None,
     start_date=datetime(2021, 1, 1),
     catchup=False,
 )
 
-start = DummyOperator(
-    task_id='start',
-    dag=dag
-)
+start = EmptyOperator(task_id='start', dag=dag)
 
 feature_eng_train_task = SparkSubmitOperator(
     task_id='feature_eng_train_task',
     application="{{ var.value.base_dir }}/feature_eng.py",
-    name="feature_eng_train",
-    application_args=["--path-in", "/datasets/amazon/amazon_extrasmall_train.json",
-                      "--path-out", "{{ var.value.base_dir }}/deniss97_train_out"],
-    dag=dag,
+    name='feature_engineering',
+    conn_id='spark_default',
+    executor_cores=1,
+    executor_memory='2g',
+    num_executors=2,
+    conf={
+        'spark.driver.extraJavaOptions': '-Djava.security.egd=file:/dev/../dev/urandom',
+        'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
+    },
+    env_vars={
+        'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
+    },
+    dag=dag
 )
 
 download_train_task = BashOperator(
@@ -41,20 +48,18 @@ download_train_task = BashOperator(
     dag=dag
 )
 
-train_task = SparkSubmitOperator(
+train_task = BashOperator(
     task_id='train_task',
-    application="{{ var.value.base_dir }}/train_model.py",
-    name="train_model",
-    application_args=["--train-in", "{{ var.value.base_dir }}/deniss97_train_out_local",
-                      "--sklearn-model-out", "{{ var.value.base_dir }}/6.joblib"],
-    dag=dag,
+    bash_command='/opt/conda/envs/dsenv/bin/python {{ var.value.base_dir }}/train_model.py --train-in {{ var.value.base_dir }}/deniss97_train_out_local --model-out {{ var.value.base_dir }}/6.joblib',
+    dag=dag
 )
+
 
 model_sensor = FileSensor(
     task_id='model_sensor',
     filepath='{{ var.value.base_dir }}/6.joblib',
-    poke_interval=60,
-    timeout=600,
+    poke_interval=300,
+    timeout=3600,
     dag=dag
 )
 
@@ -77,10 +82,6 @@ predict_task = SparkSubmitOperator(
     dag=dag,
 )
 
-end = DummyOperator(
-    task_id='end',
-    dag=dag
-)
+end = EmptyOperator(task_id='end', dag=dag)
 
 start >> feature_eng_train_task >> download_train_task >> train_task >> model_sensor >> feature_eng_test_task >> predict_task >> end
-
