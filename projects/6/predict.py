@@ -2,7 +2,7 @@ import sys
 from pyspark.sql import SparkSession
 from pyspark.ml import PipelineModel
 import pandas as pd
-from sklearn.externals import joblib
+import joblib
 
 def predic(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
