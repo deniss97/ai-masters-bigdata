@@ -4,16 +4,17 @@ from pyspark.ml import PipelineModel
 import pandas as pd
 from sklearn.externals import joblib
 
-def predict(model_path, test_data, output_path):
+def predic(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
     
     df_test = spark.read.json(test_data)
     
-    model = joblib.load(model_path)
+    test_reviews = df_test.select("reviewText").toPandas()['reviewText'].tolist()
     
-    features = pd.DataFrame(df_test.select("reviewText").collect())
-    predictions = model.predict(features)
+    pipeline = joblib.load(model_path)
+
+    predictions = pipeline.predict(test_reviews)
 
     pd.DataFrame(predictions, columns=['prediction']).to_csv(output_path, index_label="id", header=False)
 
