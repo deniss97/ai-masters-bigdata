@@ -4,7 +4,7 @@ from pyspark.ml import PipelineModel
 import pandas as pd
 import joblib
 
-def predic(test_data, output_path, model_path):
+def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
     
