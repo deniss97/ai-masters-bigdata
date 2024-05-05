@@ -8,10 +8,13 @@ def feature_engineering(input_path, output_path):
     spark.sparkContext.setLogLevel('WARN')
     
     df = spark.read.json(input_path).na.fill('No Review', subset=["reviewText"])
-
+ 
+    print(df.printSchema())
+    print(df.show(truncate=False))
+   
     tokenizer = Tokenizer(inputCol="reviewText", outputCol="words")
     hashingTF = HashingTF(inputCol="words", outputCol="features")
-    indexer = StringIndexer(inputCol="overall", outputCol="label")  # Используем overall как метку
+    indexer = StringIndexer(inputCol="label", outputCol="label")
 
     pipeline = Pipeline(stages=[tokenizer, hashingTF, indexer])
     model = pipeline.fit(df)
