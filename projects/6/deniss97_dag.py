@@ -101,11 +101,32 @@ predict_task = SparkSubmitOperator(
     task_id='predict_task',
     application=f"{base_dir}/predict.py",
     name="make_predictions",
+    conn_id='spark_default',
+    executor_cores=1,
+    executor_memory='2g',
+    num_executors=2,
+    conf={
+        'spark.driver.extraJavaOptions': '-Djava.security.egd=file:/dev/../dev/urandom',
+        'spark.yarn.appMasterEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
+        'spark.yarn.executorEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
+        'spark.yarn.preserve.staging.files':'false',
+        'spark.sql.warehouse.dir': '/user/hive/warehouse',
+        'spark.hadoop.validateOutputSpecs': 'false'
+    },
+    env_vars={
+        'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
+        'HADOOP_CONF_DIR': '/etc/hadoop/conf',
+        'YARN_CONF_DIR': '/etc/hadoop/conf'
+    },
     application_args=["--test-in", "/user/ubuntu/deniss97_test_out",
                       "--pred-out", "deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
-    dag=dag,
+    packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
+    driver_memory='1g',
+    spark_binary='/usr/bin/spark3-submit',
+    dag=dag
 )
+
 
 end = EmptyOperator(task_id='end', dag=dag)
 
