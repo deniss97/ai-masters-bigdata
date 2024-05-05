@@ -84,7 +84,7 @@ predict_task = SparkSubmitOperator(
     application=f"{base_dir}/predict.py",
     name="make_predictions",
     application_args=["--test-in", f"{base_dir}/deniss97_test_out",
-                      "--pred-out", "f"hdfs://user/{os.getenv('USER')}/deniss97_hw6_prediction",
+                      "--pred-out", f"hdfs://user/{os.getenv('USER')}/deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     dag=dag,
 )
