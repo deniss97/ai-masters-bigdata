@@ -53,7 +53,7 @@ feature_eng_train_task = SparkSubmitOperator(
 
 download_train_task = BashOperator(
     task_id='download_train_task',
-    bash_command=f"hdfs dfs -get /user/deniss97/deniss97_train_out {base_dir}/deniss97_train_out_local",
+    bash_command=f"hdfs dfs -get /user/ubuntu/deniss97_train_out {base_dir}/deniss97_train_out_local",
     dag=dag
 )
 
