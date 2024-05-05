@@ -12,7 +12,7 @@ def predict(model_path, test_data, output_path):
     
     model = joblib.load(model_path)
     
-    features = pd.DataFrame(df_test.select("features").collect())
+    features = pd.DataFrame(df_test.select("reviewText").collect())
     predictions = model.predict(features)
 
     pd.DataFrame(predictions, columns=['prediction']).to_csv(output_path, index_label="id", header=False)

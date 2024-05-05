@@ -7,7 +7,7 @@ import joblib
 
 def train_model(train_in, sklearn_model_out):
     data = pd.read_json(train_in, lines=True)
-    features = data['features'].tolist()
+    features = data["reviewText"].tolist()
     labels = data['label'].tolist()
 
     model = LinearRegression()

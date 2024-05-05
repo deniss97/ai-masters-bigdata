@@ -11,9 +11,9 @@ def feature_engineering(input_path, output_path):
  
     tokenizer = Tokenizer(inputCol="reviewText", outputCol="words")
     hashingTF = HashingTF(inputCol="words", outputCol="features")
-    indexer = StringIndexer(inputCol="label", outputCol="indexedLabel")
+    # indexer = StringIndexer(inputCol="label", outputCol="indexedLabel")
 
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, indexer])
+    pipeline = Pipeline(stages=[tokenizer, hashingTF])
     model = pipeline.fit(df)
     transformed_df = model.transform(df)
     

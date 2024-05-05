@@ -59,7 +59,7 @@ download_train_task = BashOperator(
 
 train_task = BashOperator(
     task_id='train_task',
-    bash_command=f"/opt/conda/envs/dsenv/bin/python {base_dir}/sklearn_train_script.py --train-in {base_dir}/deniss97_train_out_local --model-out {base_dir}/6.joblib",
+    bash_command=f"/opt/conda/envs/dsenv/bin/python {base_dir}/sklearn_train_script.py --train-in {base_dir}/deniss97_train_out_local --sklearn-model-out {base_dir}/6.joblib",
     dag=dag
 )
 
