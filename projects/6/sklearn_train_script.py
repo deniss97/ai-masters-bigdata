@@ -1,12 +1,22 @@
 import sys
 import argparse
 import pandas as pd
+import glob
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import joblib
 
 def train_model(train_in, sklearn_model_out):
-    data = pd.read_json(train_in, lines=True)
+
+    file_paths = glob.glob(train_dir + "/*.json")
+    data_frames = []
+
+    for file_path in file_paths:
+        df = pd.read_json(file_path, lines=True)
+        data_frames.append(df)
+
+    data = pd.concat(data_frames, ignore_index=True)
+    # data = pd.read_json(train_in, lines=True)
     features = data["reviewText"].tolist()
     labels = data['label'].tolist()
 
