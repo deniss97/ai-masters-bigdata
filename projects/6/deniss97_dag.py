@@ -44,7 +44,7 @@ feature_eng_train_task = SparkSubmitOperator(
         'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
     },
     application_args=["--path-in", "/datasets/amazon/amazon_extrasmall_train.json",
-                      "--path-out", f"hdfs://user/{os.getenv('USER')}/deniss97_train_out"],
+                      "--path-out", "deniss97_train_out"],
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
     driver_memory='1g',
     spark_binary='/usr/bin/spark3-submit',
@@ -76,7 +76,7 @@ feature_eng_test_task = SparkSubmitOperator(
     application=f"{base_dir}/feature_eng.py",
     name="feature_eng_test",
     application_args=["--path-in", "/datasets/amazon/amazon_extrasmall_test.json",
-                      "--path-out", f"hdfs://user/{os.getenv('USER')}/deniss97_test_out"],
+                      "--path-out", "deniss97_test_out"],
     dag=dag,
 )
 
@@ -85,7 +85,7 @@ predict_task = SparkSubmitOperator(
     application=f"{base_dir}/predict.py",
     name="make_predictions",
     application_args=["--test-in", f"{base_dir}/deniss97_test_out",
-                      "--pred-out", f"hdfs://user/{os.getenv('USER')}/deniss97_hw6_prediction",
+                      "--pred-out", "deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     dag=dag,
 )
