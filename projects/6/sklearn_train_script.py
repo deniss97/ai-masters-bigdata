@@ -5,6 +5,7 @@ import glob
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import joblib
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def train_model(train_in, sklearn_model_out):
 
@@ -17,8 +18,9 @@ def train_model(train_in, sklearn_model_out):
 
     data = pd.concat(data_frames, ignore_index=True)
     # data = pd.read_json(train_in, lines=True)
-    features = data["reviewText"].tolist()
-    labels = data['label'].tolist()
+    vectorizer = TfidfVectorizer(stop_words='english')
+    features = vectorizer.fit_transform(data["reviewText"])
+    labels = data['label']
 
     model = LinearRegression()
     model.fit(features, labels)
