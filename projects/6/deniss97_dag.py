@@ -4,6 +4,7 @@ from airflow.operators.bash import BashOperator
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from airflow.sensors.filesystem import FileSensor
 from datetime import datetime
+import os
 
 default_args = {
     'owner': 'airflow',
