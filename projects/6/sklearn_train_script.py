@@ -8,7 +8,7 @@ import joblib
 
 def train_model(train_in, sklearn_model_out):
 
-    file_paths = glob.glob(train_dir + "/*.json")
+    file_paths = glob.glob(train_in + "/*.json")
     data_frames = []
 
     for file_path in file_paths:
