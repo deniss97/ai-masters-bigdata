@@ -9,12 +9,9 @@ def feature_engineering(input_path, output_path):
     
     df = spark.read.json(input_path).na.fill('No Review', subset=["reviewText"])
  
-    print(df.printSchema())
-    print(df.show(truncate=False))
-   
     tokenizer = Tokenizer(inputCol="reviewText", outputCol="words")
     hashingTF = HashingTF(inputCol="words", outputCol="features")
-    indexer = StringIndexer(inputCol="label", outputCol="label")
+    indexer = StringIndexer(inputCol="label", outputCol="indexedLabel")
 
     pipeline = Pipeline(stages=[tokenizer, hashingTF, indexer])
     model = pipeline.fit(df)
