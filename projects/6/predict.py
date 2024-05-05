@@ -20,5 +20,13 @@ def predict(model_path, test_data, output_path):
     spark.stop()
 
 if __name__ == "__main__":
-    predict(sys.argv[1], sys.argv[2], sys.argv[3])
+    input_arg_index = sys.argv.index("--test-in") + 1
+    output_arg_index = sys.argv.index("--pred-out") + 1
+    model_arg_index = sys.argv.index("--sklearn-model-in") + 1
+    
+    input_path = sys.argv[input_arg_index]
+    output_path = sys.argv[output_arg_index]
+    model_path = sys.argv[model_arg_index]
+
+    predict(input_path, output_path, model_path)
 

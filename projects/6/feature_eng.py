@@ -22,5 +22,11 @@ def feature_engineering(input_path, output_path):
     spark.stop()
 
 if __name__ == "__main__":
-    feature_engineering(sys.argv[1], sys.argv[2])
+    input_arg_index = sys.argv.index("--path-in") + 1
+    output_arg_index = sys.argv.index("--path-out") + 1
+    
+    input_path = sys.argv[input_arg_index]
+    output_path = sys.argv[output_arg_index]
+
+    feature_engineering(input_path, output_path)
 

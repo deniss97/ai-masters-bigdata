@@ -42,8 +42,8 @@ feature_eng_train_task = SparkSubmitOperator(
     env_vars={
         'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
     },
-    application_args=["--input", "/datasets/amazon/amazon_extrasmall_train.json",
-                      "--output", f"{base_dir}/deniss97_train_out"],
+    application_args=["--path-in", "/datasets/amazon/amazon_extrasmall_train.json",
+                      "--path-out", f"{base_dir}/deniss97_train_out"],
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
     driver_memory='1g',
     spark_binary='/usr/bin/spark3-submit',
@@ -74,8 +74,8 @@ feature_eng_test_task = SparkSubmitOperator(
     task_id='feature_eng_test_task',
     application=f"{base_dir}/feature_eng.py",
     name="feature_eng_test",
-    application_args=["--input", "/datasets/amazon/amazon_extrasmall_test.json",
-                      "--output", f"{base_dir}/deniss97_test_out"],
+    application_args=["--path-in", "/datasets/amazon/amazon_extrasmall_test.json",
+                      "--path-out", f"{base_dir}/deniss97_test_out"],
     dag=dag,
 )
 
