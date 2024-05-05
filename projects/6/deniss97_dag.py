@@ -59,7 +59,7 @@ download_train_task = BashOperator(
 
 train_task = BashOperator(
     task_id='train_task',
-    bash_command=f"/opt/conda/envs/dsenv/bin/python {base_dir}/train_model.py --train-in {base_dir}/deniss97_train_out_local --model-out {base_dir}/6.joblib",
+    bash_command=f"/opt/conda/envs/dsenv/bin/python {base_dir}/sklearn_train_script.py --train-in {base_dir}/deniss97_train_out_local --model-out {base_dir}/6.joblib",
     dag=dag
 )
 
@@ -71,20 +71,37 @@ model_sensor = FileSensor(
     dag=dag
 )
 
+
 feature_eng_test_task = SparkSubmitOperator(
     task_id='feature_eng_test_task',
     application=f"{base_dir}/feature_eng.py",
-    name="feature_eng_test",
+    name='feature_eng_test',
+    conn_id='spark_default',
+    executor_cores=1,
+    executor_memory='2g',
+    num_executors=2,
+    conf={
+        'spark.driver.extraJavaOptions': '-Djava.security.egd=file:/dev/../dev/urandom',
+        'spark.yarn.appMasterEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
+        'spark.yarn.executorEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
+    },
+    env_vars={
+        'PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python'
+    },
     application_args=["--path-in", "/datasets/amazon/amazon_extrasmall_test.json",
                       "--path-out", "deniss97_test_out"],
-    dag=dag,
+    packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
+    driver_memory='1g',
+    spark_binary='/usr/bin/spark3-submit',
+    dag=dag
 )
+
 
 predict_task = SparkSubmitOperator(
     task_id='predict_task',
     application=f"{base_dir}/predict.py",
     name="make_predictions",
-    application_args=["--test-in", f"{base_dir}/deniss97_test_out",
+    application_args=["--test-in", "/user/ubuntu/deniss97_test_out",
                       "--pred-out", "deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     dag=dag,
