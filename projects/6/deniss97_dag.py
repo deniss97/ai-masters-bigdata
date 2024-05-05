@@ -103,14 +103,18 @@ predict_task = SparkSubmitOperator(
     name="make_predictions",
     conn_id='spark_default',
     executor_cores=1,
-    executor_memory='8g',
+    executor_memory='4g',  # Уменьшено с 8g до 1g
     num_executors=2,
     conf={
         'spark.driver.extraJavaOptions': '-Djava.security.egd=file:/dev/../dev/urandom',
         'spark.yarn.appMasterEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
         'spark.yarn.executorEnv.PYSPARK_PYTHON': '/opt/conda/envs/dsenv/bin/python',
-        'spark.yarn.preserve.staging.files':'false',
+        'spark.yarn.preserve.staging.files': 'false',
         'spark.sql.warehouse.dir': '/user/hive/warehouse',
+        'spark.driver.memory': '2g',  # Уменьшено с 4g до 1g
+        'spark.executor.instances': '2',  # Количество экземпляров каждого executor'а
+        'spark.executor.memoryOverhead': '512m',  # Дополнительная память над обычной
+        'spark.yarn.executor.memoryOverhead': '512m',
         'spark.hadoop.validateOutputSpecs': 'false'
     },
     env_vars={
@@ -122,8 +126,8 @@ predict_task = SparkSubmitOperator(
                       "--pred-out", "deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
-    driver_memory='4g',
-    spark_binary='/usr/bin/spark3-submit',
+    driver_memory='2g',  # Уменьшена память драйвера
+    spark_binary='/usr/bin/spark3-submit',  # Убедитесь, что используете правильный путь к исполняемому файлу Spark
     dag=dag
 )
 
