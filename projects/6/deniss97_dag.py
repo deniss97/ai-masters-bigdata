@@ -103,7 +103,7 @@ predict_task = SparkSubmitOperator(
     name="make_predictions",
     conn_id='spark_default',
     executor_cores=1,
-    executor_memory='2g',
+    executor_memory='8g',
     num_executors=2,
     conf={
         'spark.driver.extraJavaOptions': '-Djava.security.egd=file:/dev/../dev/urandom',
@@ -122,7 +122,7 @@ predict_task = SparkSubmitOperator(
                       "--pred-out", "deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
-    driver_memory='1g',
+    driver_memory='4g',
     spark_binary='/usr/bin/spark3-submit',
     dag=dag
 )
