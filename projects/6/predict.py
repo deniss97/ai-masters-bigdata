@@ -4,7 +4,7 @@ from pyspark.ml import PipelineModel
 import pandas as pd
 import joblib
 from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType
+from pyspark.sql.types import StringType, FloatType
 import numpy as np
 from pyspark.sql.functions import regexp_replace
 
