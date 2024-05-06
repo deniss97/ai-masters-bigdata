@@ -17,9 +17,7 @@ def train_model(train_in, sklearn_model_out):
         data_frames.append(df)
 
     data = pd.concat(data_frames, ignore_index=True)
-    # data = pd.read_json(train_in, lines=True)
-    vectorizer = TfidfVectorizer(stop_words='english')
-    features = vectorizer.fit_transform(data["reviewText"])
+    features = data[['vote']].fillna(0)
     labels = data['label']
 
     model = LinearRegression()

@@ -12,21 +12,17 @@ def predict(test_data, output_path, model_path):
     spark.sparkContext.setLogLevel('WARN')
 
     df_test = spark.read.json(test_data)
+    df_test = df_test.withColumn("vote", df_test["vote"].cast("int")).fillna({'vote': 0})
 
-    pipeline = joblib.load(model_path)
-
-    # Создаём UDF, которая адаптирует данные под ожидания sklearn: преобразует список (1D) в 2D массив
-    def model_predict(text):
-        text_array = np.array([text]).reshape(1, -1)  # Преобразование в 2D массив
-        return str(pipeline.predict(text_array)[0])
-
-    predict_udf = udf(model_predict, StringType())
-
-    # Применяем UDF к DataFrame
-    df_result = df_test.withColumn('prediction', predict_udf(df_test['reviewText']))
-
-    # Сохранение прогноза в CSV файл
-    df_result.select('prediction').write.csv(output_path, mode='overwrite', header=True)
+    model = joblib.load(model_path)
+    
+    # Применение модели для каждой строки DataFrame
+    pd_test = df_test.select("vote").toPandas()
+    predictions = model.predict(pd_test)
+    
+    # Запись результатов
+    result_df = spark.createDataFrame(pd.DataFrame(predictions, columns=['prediction']))
+    result_df.write.csv(output_path, mode='overwrite', header=True)
 
     spark.stop()
     
