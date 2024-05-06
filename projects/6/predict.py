@@ -3,6 +3,7 @@ from pyspark.sql import SparkSession
 import joblib
 from pyspark.sql.functions import regexp_replace, col, when
 from pyspark.sql.types import FloatType
+import numpy as np
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
