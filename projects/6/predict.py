@@ -14,11 +14,12 @@ def copy_data(input_path, output_path):
     ])
 
     # Чтение данных с использованием заданной схемы
-    df_test = spark.read.schema(schema).json(input_path)
+    df_test = spark.read.schema(schema).csv(input_path)
     df_test.cache()  # Кэширование DataFrame
 
     # Сохранение данных в CSV файл без заголовков в указанном пути
-    df_test.write.json(output_path, mode='overwrite')
+    # Здесь важно правильно настроить параметры, если формат исходного файла отличается
+    df_test.write.csv(output_path, mode='overwrite', header=False)
 
     # Завершение сессии Spark
     spark.stop()
