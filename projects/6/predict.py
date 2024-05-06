@@ -18,7 +18,7 @@ def copy_data(input_path, output_path):
     df_test.cache() # Кэширование DataFrame
 
     # Запись данных без изменений в CSV
-    df_test.limit(4000000).coalesce(1).write.mode('overwrite').option("header", "false").csv(output_path)
+    df_test.limit(4000000).coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
 
     # Завершение сессии Spark
     spark.stop()
