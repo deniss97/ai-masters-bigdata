@@ -120,7 +120,7 @@ predict_task = SparkSubmitOperator(
         'HADOOP_CONF_DIR': '/etc/hadoop/conf',
         'YARN_CONF_DIR': '/etc/hadoop/conf'
     },
-    application_args=["--test-in", "/user/ubuntu/tARTar78_hw6_prediction",
+    application_args=["--test-in", "/user/ubuntu/ShaeNaZar_hw6_prediction",
                       "--pred-out", "deniss97_hw6_prediction",
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',

@@ -23,7 +23,7 @@ def copy_data(input_path, output_path):
     # Завершение сессии Spark
     spark.stop()
 
-if __name__ == "__main__":  # Исправлено условие if для правильного исполнения
+if __name__ == "__main__":  # Корректное выполнение условия для запуска скрипта
     # Получение путей из аргументов командной строки
     input_arg_index = sys.argv.index("--test-in") + 1
     output_arg_index = sys.argv.index("--pred-out") + 1
