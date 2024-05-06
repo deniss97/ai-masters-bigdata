@@ -1,9 +1,9 @@
 import sys
 import numpy as np
 import joblib
-from pyspark.sql import SparkSession
 from pyspark.sql.functions import regexp_replace
 from pyspark.sql.types import FloatType
+from pyspark.sql import SparkSession, functions as F
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
@@ -11,10 +11,17 @@ def predict(test_data, output_path, model_path):
 
     # Чтение и предобработка данных
     df_test = spark.read.json(test_data)
-    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType()))
+    print("Схема данных после загрузки:")
+    df_test.printSchema()  # Для проверки доступных столбцов
+
+    if 'vote' in df_test.columns:
+        df_test = df_test.withColumn("vote", F.regexp_replace("vote", ",", "").cast(FloatType()))
+    else:
+        df_test = df_test.withColumn("vote", F.lit(0.0).cast(FloatType()))
+
     df_test = df_test.fillna({'vote': 0})  # Применение fillna на уровне DataFrame
 
-    # Загрузка модели
+    # Загрузка модели и дополнительные шаги...
     model = joblib.load(model_path)
 
     # Применение модели для каждой строки DataFrame
