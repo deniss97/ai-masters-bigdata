@@ -12,8 +12,8 @@ def predict(test_data, output_path, model_path):
     spark.sparkContext.setLogLevel('WARN')
 
     df_test = spark.read.json(test_data)
-    df_test = df_test.withColumn("vote", df_test["vote"].cast("int")).fillna({'vote': 0})
-
+    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType())).fillna({'vote': 0})
+    
     model = joblib.load(model_path)
     
     # Применение модели для каждой строки DataFrame

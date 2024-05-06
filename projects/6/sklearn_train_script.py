@@ -17,7 +17,8 @@ def train_model(train_in, sklearn_model_out):
         data_frames.append(df)
 
     data = pd.concat(data_frames, ignore_index=True)
-    features = data[['vote']].fillna(0)
+    data['vote'] = data['vote'].str.replace(',', '').astype(float).fillna(0)    
+    features = data[['vote']]
     labels = data['label']
 
     model = LinearRegression()
