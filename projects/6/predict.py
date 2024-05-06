@@ -6,6 +6,7 @@ import joblib
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType
 import numpy as np
+from pyspark.sql.functions import regexp_replace
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
