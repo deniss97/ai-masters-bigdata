@@ -1,9 +1,9 @@
 import sys
-from pyspark.sql import SparkSession
-import joblib
-from pyspark.sql.functions import regexp_replace, col, when
-from pyspark.sql.types import FloatType
 import numpy as np
+import joblib
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import regexp_replace
+from pyspark.sql.types import FloatType
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
@@ -19,13 +19,13 @@ def predict(test_data, output_path, model_path):
     # Применение модели для каждой строки DataFrame
     pd_test = df_test.select("vote").toPandas()
     predictions = model.predict(pd_test)
-    
+
     # Обработка NaN в предсказаниях
-    predictions = np.where(np.isnan(predictions), 0.5, predictions)  # Замена NaN на 0.5, пример
+    predictions = np.where(np.isnan(predictions), 0.5, predictions)  # Замена NaN на 0.5
 
     # Преобразование списка предсказаний в Spark DataFrame
     rdd = spark.sparkContext.parallelize(predictions.tolist())
-    result_df = rdd.map(lambda x: (str(x),)).toDF(['prediction'])
+    result_df = rdd.map(lambda x: (float(x),)).toDF(['prediction'])
 
     # Ограничение на 4,000,000 записей
     result_df = result_df.limit(4000000)
