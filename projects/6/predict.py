@@ -8,10 +8,10 @@ from pyspark.sql.types import FloatType
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder \
         .appName("Prediction") \
-        .config("spark.executor.memoryOverhead", "512m")  # Обновлено согласно рекомендации
-        .getOrCreate()
+        .config("spark.executor.memoryOverhead", "512m") \
+        .getOrCreate()  # Правильно выровненный код без ненужного отступа
     spark.sparkContext.setLogLevel('WARN')
-
+    
     # Чтение и предобработка данных
     df_test = spark.read.json(test_data)
     print("Схема данных после загрузки:")
