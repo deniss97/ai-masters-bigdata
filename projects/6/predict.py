@@ -35,17 +35,17 @@ def predict(test_data, output_path, model_path):
     predictions = np.where(np.isnan(predictions), 0.5, predictions)
 
     # Преобразование списка предсказаний в Spark DataFrame
-    rdd = spark.sparkContext.parallelize(predictions.tolist())
-    result_df = rdd.map(lambda x: (float(x),)).toDF(['prediction'])
+    # Предполагаем создание или использование идентификационного поля для объединения данных
+    df_predictions = spark.createDataFrame(zip(list(range(len(predictions))), predictions), schema=["id", "prediction"]).cast(StringType())
+    df_predictions = df_predictions.withColumn("id", F.col("id").cast(StringType()))
 
     # Ограничение на 4,000,000 записей
-    result_df = result_df.limit(4000000)
+    df_predictions = df_predictions.limit(4000000)
 
     # Запись результатов без заголовков и индексов
-    result_df.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
+    df_predictions.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
 
     spark.stop()
-
 
 if __name__ == "__main__":
     input_arg_index = sys.argv.index("--test-in") + 1
