@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import joblib
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import regexp_replace
+from pyspark.sql.functions import regexp_replace, lit
 from pyspark.sql.types import FloatType
-from pyspark.sql import Row
+from pyspark.sql import functions as F
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
@@ -18,27 +18,29 @@ def predict(test_data, output_path, model_path):
     if 'vote' in df_test.columns:
         df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType()))
     else:
-        df_test = df_test.withColumn("vote", F.lit(0.0).cast(FloatType()))
+        df_test = df_test.withColumn("vote", lit(0.0).cast(FloatType()))
 
-    df_test = df_test.na.fill({'vote': 0})  # Применение fillna на уровне DataFrame
-    model = joblib.load(model_path)  # Загрузка модели
+df_test = df_test.fillna({'vote': 0})  # Применение fillna на уровне DataFrame
+
+    # Загрузка модели
+    model = joblib.load(model_path)
 
     # Применение модели для каждой строки DataFrame
     pd_test = df_test.select("vote").toPandas()
-    predictions = model.predict(pd_test['vote'].values.reshape(-1,1))
+    predictions = model.predict(pd_test['vote'].astype(float).values.reshape(-1, 1))
 
     # Обработка NaN в предсказаниях
     predictions = np.where(np.isnan(predictions), 0.5, predictions)
 
-    # Преобразование массива предсказаний в Spark DataFrame
-    rows = [Row(id=i, prediction=float(pred)) for i, pred in enumerate(predictions)]
-    df_predictions = spark.createDataFrame(rows)
+    # Преобразование списка предсказаний в Spark DataFrame
+    rows = [Row(id=i, prediction=float(x)) for i, x in enumerate(predictions)]
+    result_df = spark.createDataFrame(rows)
 
     # Ограничение на 4,000,000 записей
-    df_predictions = df_predictions.limit(4000000)
-    
+    result_df = result_df.limit(4000000)
+
     # Запись результатов без заголовков и индексов
-    df_predictions.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
+    result_df.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
 
     spark.stop()
 
