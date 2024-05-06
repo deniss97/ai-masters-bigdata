@@ -1,13 +1,15 @@
 import sys
 import numpy as np
 import joblib
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, Row  # Исправлено добавлением импорта Row
 from pyspark.sql.functions import regexp_replace, lit
 from pyspark.sql.types import FloatType
-from pyspark.sql import functions as F
 
 def predict(test_data, output_path, model_path):
-    spark = SparkSession.builder.appName("Prediction").getOrCreate()
+    spark = SparkSession.builder \
+        .appName("Prediction") \
+        .config("spark.executor.memoryOverhead", "512m")  # Обновлено согласно рекомендации
+        .getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
 
     # Чтение и предобработка данных
@@ -20,7 +22,7 @@ def predict(test_data, output_path, model_path):
     else:
         df_test = df_test.withColumn("vote", lit(0.0).cast(FloatType()))
 
-df_test = df_test.fillna({'vote': 0})  # Применение fillna на уровне DataFrame
+    df_test = df_test.fillna({'vote': 0})  # Применение fillna на уровне DataFrame
 
     # Загрузка модели
     model = joblib.load(model_path)
@@ -44,7 +46,7 @@ df_test = df_test.fillna({'vote': 0})  # Применение fillna на уро
 
     spark.stop()
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # Правильное использование __name__ и __main__
     input_arg_index = sys.argv.index("--test-in") + 1
     output_arg_index = sys.argv.index("--pred-out") + 1
     model_arg_index = sys.argv.index("--sklearn-model-in") + 1

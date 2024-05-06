@@ -113,6 +113,7 @@ predict_task = SparkSubmitOperator(
         'spark.sql.warehouse.dir': '/user/hive/warehouse',
         'spark.executor.memoryOverhead': '512m',
         'spark.yarn.executor.memoryOverhead': '512m',
+        'spark.executor.memoryOverhead': '512m',  # Новый ключ взамен устаревшего
         'spark.hadoop.validateOutputSpecs': 'false'
     },
     env_vars={
@@ -125,7 +126,7 @@ predict_task = SparkSubmitOperator(
                       "--sklearn-model-in", f"{base_dir}/6.joblib"],
     packages='org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1',
     driver_memory='2g',
-    spark_binary='/usr/bin/spark3-submit',  # Исправлено на spark-submit
+    spark_binary='/usr/bin/spark3-submit',  # Указание на использование конкретной версии spark-submit
     dag=dag
 )
 
