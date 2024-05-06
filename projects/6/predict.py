@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import joblib
 from pyspark.sql.functions import regexp_replace
-from pyspark.sql.types import FloatType
+from pyspark.sql.types import FloatType, StringType
 from pyspark.sql import SparkSession, functions as F
 
 def predict(test_data, output_path, model_path):
@@ -14,22 +14,25 @@ def predict(test_data, output_path, model_path):
     print("Схема данных после загрузки:")
     df_test.printSchema()  # Для проверки доступных столбцов
 
+    # Проверка и превращение данных, если 'vote' присутствует, если нет, создание 'vote' с типом float
     if 'vote' in df_test.columns:
         df_test = df_test.withColumn("vote", F.regexp_replace("vote", ",", "").cast(FloatType()))
     else:
-        df_test = df_test.withColumn("vote", F.lit(0.0).cast(FloatType()))
+        df_test = df_test.withColumn("vote", F.lit("0").cast(FloatType()))
 
     df_test = df_test.fillna({'vote': 0})  # Применение fillna на уровне DataFrame
 
-    # Загрузка модели и дополнительные шаги...
+    # Загрузка модели
     model = joblib.load(model_path)
 
     # Применение модели для каждой строки DataFrame
     pd_test = df_test.select("vote").toPandas()
+    # Убедитесь, что данные имеют правильный тип
+    pd_test['vote'] = pd_test['vote'].astype(float)
     predictions = model.predict(pd_test)
 
     # Обработка NaN в предсказаниях
-    predictions = np.where(np.isnan(predictions), 0.5, predictions)  # Замена NaN на 0.5
+    predictions = np.where(np.isnan(predictions), 0.5, predictions)
 
     # Преобразование списка предсказаний в Spark DataFrame
     rdd = spark.sparkContext.parallelize(predictions.tolist())
@@ -42,6 +45,7 @@ def predict(test_data, output_path, model_path):
     result_df.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
 
     spark.stop()
+
 
 if __name__ == "__main__":
     input_arg_index = sys.argv.index("--test-in") + 1
