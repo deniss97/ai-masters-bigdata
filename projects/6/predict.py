@@ -5,24 +5,27 @@ import pandas as pd
 import joblib
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType
+import numpy as np
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
 
-    # Читаем данные и обрабатываем отзывы непосредственно в Spark
     df_test = spark.read.json(test_data)
 
-    # Загрузка модели
     pipeline = joblib.load(model_path)
 
-    # Определяем UDF
-    predict_udf = udf(lambda text: str(pipeline.predict([text])[0]), StringType())
+    # Создаём UDF, которая адаптирует данные под ожидания sklearn: преобразует список (1D) в 2D массив
+    def model_predict(text):
+        text_array = np.array([text]).reshape(1, -1)  # Преобразование в 2D массив
+        return str(pipeline.predict(text_array)[0])
 
-    # Применяем модель к каждому отзыву
+    predict_udf = udf(model_predict, StringType())
+
+    # Применяем UDF к DataFrame
     df_result = df_test.withColumn('prediction', predict_udf(df_test['reviewText']))
 
-    # Сохраняем результаты в CSV
+    # Сохранение прогноза в CSV файл
     df_result.select('prediction').write.csv(output_path, mode='overwrite', header=True)
 
     spark.stop()
