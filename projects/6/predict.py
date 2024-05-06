@@ -1,35 +1,48 @@
 import sys
+import numpy as np
+import joblib
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, FloatType
+from pyspark.sql.functions import regexp_replace
+from pyspark.sql.types import FloatType
 
-def copy_data(input_path, output_path):
-    # Создание Spark сессии
-    spark = SparkSession.builder.appName("DataCopying").getOrCreate()
+def predict(test_data, output_path, model_path):
+    spark = SparkSession.builder.appName("Prediction").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
 
-    # Определение схемы данных
-    schema = StructType([
-        StructField("id", StringType()),  # Изменено на StringType
-        StructField("pred", FloatType())
-    ])
+    # Чтение и предобработка данных
+    df_test = spark.read.json(test_data)
+    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType()).fillna(0))
 
-    # Чтение и предобработка данных с использованием заданной схемы
-    df_test = spark.read.schema(schema).json(input_path)
-    df_test.cache()  # Кэширование DataFrame
+    # Загрузка модели
+    model = joblib.load(model_path)
 
-    # Запись данных без изменений в JSON, ограничиваем количество записей до 4000000
-    df_test.limit(4000000).coalesce(1).write.mode('overwrite').json(output_path)
+    # Применение модели для каждой строки DataFrame
+    pd_test = df_test.select("vote").toPandas()
+    predictions = model.predict(pd_test)
 
-    # Завершение сессии Spark
+    # Обработка NaN в предсказаниях
+    predictions = np.where(np.isnan(predictions), 0.5, predictions)  # Замена NaN на 0.5
+
+    # Преобразование списка предсказаний в Spark DataFrame
+    rdd = spark.sparkContext.parallelize(predictions.tolist())
+    result_df = rdd.map(lambda x: (float(x),)).toDF(['prediction'])
+
+    # Ограничение на 4,000,000 записей
+    result_df = result_df.limit(4000000)
+
+    # Запись результатов без заголовков и индексов
+    result_df.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
+
     spark.stop()
 
-if __name__ == "__main__":  # Корректное выполнение условия для запуска скрипта
-    # Получение путей из аргументов командной строки
+if __name__ == "__main__":
     input_arg_index = sys.argv.index("--test-in") + 1
     output_arg_index = sys.argv.index("--pred-out") + 1
+    model_arg_index = sys.argv.index("--sklearn-model-in") + 1
 
     input_path = sys.argv[input_arg_index]
     output_path = sys.argv[output_arg_index]
+    model_path = sys.argv[model_arg_index]
 
-    copy_data(input_path, output_path)
+    predict(input_path, output_path, model_path)
 
