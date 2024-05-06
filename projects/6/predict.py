@@ -25,7 +25,7 @@ def predict(test_data, output_path, model_path):
     result_df = rdd.map(lambda x: (float(x),)).toDF(['prediction'])
 
     # Запись результатов
-    result_df.write.csv(output_path, mode='overwrite', header=True)
+    result_df.write.csv(output_path, mode='overwrite', header=False)
 
     spark.stop()
 
