@@ -2,8 +2,8 @@ import sys
 import numpy as np
 import joblib
 from pyspark.sql import SparkSession, Row
-from pyspark.sql.functions import regexp_replace, lit, col
-from pyspark.sql.types import FloatType
+from pyspark.sql.functions import regexp_replace, lit, col, when
+from pyspark.sql.types import StructType, StructField, FloatType, LongType, DoubleType
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder \
@@ -31,14 +31,21 @@ def predict(test_data, output_path, model_path):
 
     # Применение модели к признакам
     pd_test = df_test.select("vote").toPandas()
+    pd_test['vote'] = pd_test['vote'].fillna(pd_test['vote'].mean())  # Обработка NaN до применения модели
     predictions = model.predict(pd_test['vote'].values.reshape(-1, 1))
 
     # Обработка NaN в предсказаниях
-    predictions = np.where(np.isnan(predictions), 0.5, predictions)
+    predictions = np.where(np.isnan(predictions), pd_test['vote'].mean(), predictions)  # Используем среднее голосов для NaN в предсказаниях
 
-    # Преобразование результата предсказаний в Spark DataFrame
-    rows = [Row(id=i, prediction=float(pred)) for i, pred in enumerate(predictions)]
-    result_df = spark.createDataFrame(rows)
+    # Определение схемы с nullable=False
+    schema = StructType([
+        StructField("id", LongType(), nullable=False),
+        StructField("prediction", DoubleType(), nullable=False)
+    ])
+
+    # Преобразование результата предсказаний в Spark DataFrame с заданной схемой
+    rows = [Row(id=int(i), prediction=float(pred)) for i, pred in enumerate(predictions)]
+    result_df = spark.createDataFrame(rows, schema=schema)
 
     # Ограничение на 4,000,000 записей
     result_df = result_df.limit(4000000)
