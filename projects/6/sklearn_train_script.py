@@ -5,19 +5,13 @@ import glob
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 import joblib
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 def train_model(train_in, sklearn_model_out):
-
     file_paths = glob.glob(train_in + "/*.json")
-    data_frames = []
-
-    for file_path in file_paths:
-        df = pd.read_json(file_path, lines=True)
-        data_frames.append(df)
+    data_frames = [pd.read_json(f, lines=True) for f in file_paths]
 
     data = pd.concat(data_frames, ignore_index=True)
-    data['vote'] = data['vote'].str.replace(',', '').astype(float).fillna(0)    
+    data['vote'] = data['vote'].str.replace(',', '').astype(float).fillna(0)
     features = data[['vote']]
     labels = data['label']
 
