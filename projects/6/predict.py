@@ -2,30 +2,32 @@ import sys
 from pyspark.sql import SparkSession
 import joblib
 from pyspark.sql.functions import regexp_replace
-from pyspark.sql.types import FloatType, StructType, StructField, DoubleType
+from pyspark.sql.types import FloatType
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder.appName("Prediction").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
 
+    # Read and preprocess data
     df_test = spark.read.json(test_data)
-
-    # Уменьшение запятых и преобразование 'vote' в числа с плавающей точкой
     df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType())).fillna({'vote': 0})
 
-    # Загрузка модели
+    # Load the model
     model = joblib.load(model_path)
 
-    # Применение модели для каждой строки DataFrame
+    # Apply the model to each row in DataFrame
     pd_test = df_test.select("vote").toPandas()
     predictions = model.predict(pd_test)
-
-    # Преобразование pandas.DataFrame в Spark DataFrame
+    
+    # Convert predictions list to Spark DataFrame
     rdd = spark.sparkContext.parallelize(predictions.tolist())
-    result_df = rdd.map(lambda x: (float(x),)).toDF(['prediction'])
+    result_df = rdd.map(lambda x: (str(x),)).toDF(['prediction'])
 
-    # Запись результатов
-    result_df.write.csv(output_path, mode='overwrite', header=False)
+    # Limit the number of output records to 4,000,000
+    result_df = result_df.limit(4000000)
+
+    # Write results without headers and index
+    result_df.coalesce(1).write.mode('overwrite').option("header", "false").csv(output_path)
 
     spark.stop()
 
@@ -39,3 +41,4 @@ if __name__ == "__main__":
     model_path = sys.argv[model_arg_index]
 
     predict(input_path, output_path, model_path)
+
