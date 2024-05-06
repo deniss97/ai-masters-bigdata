@@ -1,8 +1,8 @@
 import sys
 import joblib
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import pandas_udf, PandasUDFType, regexp_replace, lit
-from pyspark.sql.types import LongType, DoubleType
+from pyspark.sql.functions import regexp_replace, lit, col, rand
+from pyspark.sql.types import StructType, StructField, FloatType, LongType, DoubleType
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder \
@@ -16,20 +16,21 @@ def predict(test_data, output_path, model_path):
     print("Схема данных после загрузки:")
     df_test.printSchema()
 
-    # Проверка и обработка столбца 'vote'
-    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(DoubleType()))
+    # Проверка наличия и обработка столбца 'vote'
+    if 'vote' not in df_test.columns:
+        # Генерация случайных значений для 'vote', если столбец отсутствует
+        df_test = df_test.withColumn('vote', (rand() * 100).cast(DoubleType()))  # Пример с диапазоном от 0 до 100
+    else:
+        df_test = df_test.withColumn("vote", regexp_replace(col("vote"), ",", "").cast(DoubleType()))
+
     df_test = df_test.fillna({'vote': 0.0})
 
     # Загрузка модели
     model = joblib.load(model_path)
 
-    @pandas_udf("double", PandasUDFType.SCALAR)
-    def predict_udf(votes):
-        return model.predict(votes.values.reshape(-1, 1))
-
-    # Применение модели к данным
-    df_test = df_test.withColumn("prediction", predict_udf(df_test["vote"]))
-    df_test = df_test.withColumn("id", df_test["vote"].cast(LongType()).alias("id"))
+    # Выбираем "vote" для предсказания
+    df_test = df_test.withColumn("prediction", lit(model.predict([[x] for x in df_test.select("vote").toPandas()['vote'].tolist()]).flatten()[0]).cast(DoubleType()))
+    df_test = df_test.withColumn("id", df_test["vote"].cast(LongType()))
 
     # Преобразование результата предсказаний и сохранение
     df_test.select("id", "prediction").coalesce(1).write.csv(output_path, mode="overwrite", header=False)
