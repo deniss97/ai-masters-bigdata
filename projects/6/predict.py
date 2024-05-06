@@ -1,50 +1,52 @@
 import sys
 import joblib
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import regexp_replace, lit, col, rand
-from pyspark.sql.types import StructType, StructField, FloatType, LongType, DoubleType
+from pyspark.sql.functions import pandas_udf, PandasUDFType
+from pyspark.sql.types import StructType, StructField, StringType, FloatType, DoubleType
+import pandas as pd
 
-def predict(test_data, output_path, model_path):
-    spark = SparkSession.builder \
-        .appName("Prediction") \
-        .config("spark.executor.memoryOverhead", "512m") \
-        .getOrCreate()
+def predict_task(input_path, output_path, model_path):
+    # Создание Spark сессии
+    spark = SparkSession.builder.appName("PredictionTask").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
 
-    # Чтение и предобработка данных
-    df_test = spark.read.json(test_data)
-    print("Схема данных после загрузки:")
-    df_test.printSchema()
+    # Определение схемы данных
+    schema = StructType([
+        StructField("id", StringType()),
+        StructField("pred", FloatType())
+    ])
 
-    # Проверка наличия и обработка столбца 'vote'
-    if 'vote' not in df_test.columns:
-        # Генерация случайных значений для 'vote', если столбец отсутствует
-        df_test = df_test.withColumn('vote', (rand() * 100).cast(DoubleType()))  # Пример с диапазоном от 0 до 100
-    else:
-        df_test = df_test.withColumn("vote", regexp_replace(col("vote"), ",", "").cast(DoubleType()))
-
-    df_test = df_test.fillna({'vote': 0.0})
+    # Чтение и предобработка данных с использованием заданной схемы
+    df_test = spark.read.schema(schema).json(input_path)
+    df_test.cache()  # Кэширование DataFrame
 
     # Загрузка модели
     model = joblib.load(model_path)
 
-    # Выбираем "vote" для предсказания
-    df_test = df_test.withColumn("prediction", lit(model.predict([[x] for x in df_test.select("vote").toPandas()['vote'].tolist()]).flatten()[0]).cast(DoubleType()))
-    df_test = df_test.withColumn("id", df_test["vote"].cast(LongType()))
+    # Определение pandas_udf для применения модели
+    @pandas_udf(DoubleType(), PandasUDFType.SCALAR)
+    def prediction_udf(x: pd.Series) -> pd.Series:
+        return pd.Series(model.predict(x.values.reshape(-1, 1)))
 
-    # Преобразование результата предсказаний и сохранение
-    df_test.select("id", "prediction").coalesce(1).write.csv(output_path, mode="overwrite", header=False)
+    # Применение pandas_udf к DataFrame и сохранение результатов
+    df_test = df_test.withColumn("prediction", prediction_udf(df_test["pred"]))
+    df_test = df_test.select("id", "prediction")
 
+    # Сохранение данных в CSV файл без заголовков в указанном пути
+    df_test.write.csv(output_path, mode='overwrite', header=False)
+
+    # Завершение сессии Spark
     spark.stop()
 
 if __name__ == "__main__":
-    input_arg_index = sys.argv.index("--test-in") + 1
-    output_arg_index = sys.argv.index("--pred-out") + 1
-    model_arg_index = sys.argv.index("--sklearn-model-in") + 1
+    if "main" in globals():
+        input_arg_index = sys.argv.index("--test-in") + 1
+        output_arg_index = sys.argv.index("--pred-out") + 1
+        model_arg_index = sys.argv.index("--sklearn-model-in") + 1
 
-    input_path = sys.argv[input_arg_index]
-    output_path = sys.argv[output_arg_index]
-    model_path = sys.argv[model_arg_index]
+        input_path = sys.argv[input_arg_index]
+        output_path = sys.argv[output_arg_index]
+        model_path = sys.argv[model_arg_index]
 
-    predict(input_path, output_path, model_path)
+        predict_task(input_path, output_path, model_path)
 
