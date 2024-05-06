@@ -6,7 +6,7 @@ def copy_data(input_path, output_path):
     # Создание Spark сессии
     spark = SparkSession.builder.appName("DataCopying").getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
-    
+
     # Определение схемы данных
     schema = StructType([
         StructField("id", IntegerType()),
@@ -15,10 +15,10 @@ def copy_data(input_path, output_path):
 
     # Чтение и предобработка данных с использованием заданной схемы
     df_test = spark.read.schema(schema).json(input_path)
-    df_test.cache() # Кэширование DataFrame
+    df_test.cache()  # Кэширование DataFrame
 
-    # Запись данных без изменений в CSV
-    df_test.limit(4000000).coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
+    # Запись данных без изменений в JSON, ограничиваем количество записей до 4000000
+    df_test.limit(4000000).coalesce(1).write.mode('overwrite').json(output_path)
 
     # Завершение сессии Spark
     spark.stop()
