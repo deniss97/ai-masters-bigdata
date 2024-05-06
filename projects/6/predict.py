@@ -1,6 +1,6 @@
 import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, IntegerType, FloatType
+from pyspark.sql.types import StructType, StructField, StringType, FloatType
 
 def copy_data(input_path, output_path):
     # Создание Spark сессии
@@ -9,7 +9,7 @@ def copy_data(input_path, output_path):
 
     # Определение схемы данных
     schema = StructType([
-        StructField("id", IntegerType()),
+        StructField("id", StringType()),  # Изменено на StringType
         StructField("pred", FloatType())
     ])
 
@@ -23,7 +23,7 @@ def copy_data(input_path, output_path):
     # Завершение сессии Spark
     spark.stop()
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # Исправлено условие if для правильного исполнения
     # Получение путей из аргументов командной строки
     input_arg_index = sys.argv.index("--test-in") + 1
     output_arg_index = sys.argv.index("--pred-out") + 1
