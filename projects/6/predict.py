@@ -1,9 +1,8 @@
 import sys
-import numpy as np
 import joblib
-from pyspark.sql import SparkSession, Row
-from pyspark.sql.functions import regexp_replace, lit, col, when
-from pyspark.sql.types import StructType, StructField, FloatType, LongType, DoubleType
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import pandas_udf, PandasUDFType, regexp_replace, lit
+from pyspark.sql.types import LongType, DoubleType
 
 def predict(test_data, output_path, model_path):
     spark = SparkSession.builder \
@@ -17,41 +16,23 @@ def predict(test_data, output_path, model_path):
     print("Схема данных после загрузки:")
     df_test.printSchema()
 
-    # Проверка наличия и обработка столбца 'vote'
-    if 'vote' in df_test.columns:
-        df_test = df_test.withColumn("vote", regexp_replace(col("vote"), ",", "").cast(FloatType()))
-    else:
-        df_test = df_test.withColumn("vote", lit(0.0).cast(FloatType()))
-
-    # Заполнение пропусков
+    # Проверка и обработка столбца 'vote'
+    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(DoubleType()))
     df_test = df_test.fillna({'vote': 0.0})
 
     # Загрузка модели
     model = joblib.load(model_path)
 
-    # Применение модели к признакам
-    pd_test = df_test.select("vote").toPandas()
-    pd_test['vote'] = pd_test['vote'].fillna(pd_test['vote'].mean())  # Обработка NaN до применения модели
-    predictions = model.predict(pd_test['vote'].values.reshape(-1, 1))
+    @pandas_udf("double", PandasUDFType.SCALAR)
+    def predict_udf(votes):
+        return model.predict(votes.values.reshape(-1, 1))
 
-    # Обработка NaN в предсказаниях
-    predictions = np.where(np.isnan(predictions), pd_test['vote'].mean(), predictions)  # Используем среднее голосов для NaN в предсказаниях
+    # Применение модели к данным
+    df_test = df_test.withColumn("prediction", predict_udf(df_test["vote"]))
+    df_test = df_test.withColumn("id", df_test["vote"].cast(LongType()).alias("id"))
 
-    # Определение схемы с nullable=False
-    schema = StructType([
-        StructField("id", LongType(), nullable=False),
-        StructField("prediction", DoubleType(), nullable=False)
-    ])
-
-    # Преобразование результата предсказаний в Spark DataFrame с заданной схемой
-    rows = [Row(id=int(i), prediction=float(pred)) for i, pred in enumerate(predictions)]
-    result_df = spark.createDataFrame(rows, schema=schema)
-
-    # Ограничение на 4,000,000 записей
-    result_df = result_df.limit(4000000)
-
-    # Запись результатов
-    result_df.coalesce(1).write.mode('overwrite').option("header", "false").json(output_path)
+    # Преобразование результата предсказаний и сохранение
+    df_test.select("id", "prediction").coalesce(1).write.csv(output_path, mode="overwrite", header=False)
 
     spark.stop()
 
