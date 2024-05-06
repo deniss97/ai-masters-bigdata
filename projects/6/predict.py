@@ -11,7 +11,8 @@ def predict(test_data, output_path, model_path):
 
     # Чтение и предобработка данных
     df_test = spark.read.json(test_data)
-    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType()).fillna(0))
+    df_test = df_test.withColumn("vote", regexp_replace("vote", ",", "").cast(FloatType()))
+    df_test = df_test.fillna({'vote': 0})  # Применение fillna на уровне DataFrame
 
     # Загрузка модели
     model = joblib.load(model_path)
